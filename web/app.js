@@ -1,112 +1,373 @@
-// Libraries load from a CDN at fixed versions, so the app keeps working when a library changes.
-import * as duckdb from "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.32.0/+esm";
+
 import * as Plot from "https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.17/+esm";
 
-const DATA_URL = "https://raw.githubusercontent.com/owid/co2-data/master/owid-co2-data.csv";
+// Original climate data sources
+const MODERN_URL =
+  "https://gml.noaa.gov/webdata/ccgg/trends/co2/co2_annmean_mlo.csv";
 
-const country = document.querySelector("#country");
+const HISTORICAL_URL =
+  "https://www.ncei.noaa.gov/pub/data/paleo/icecore/antarctica/vostok/co2nat-noaa.txt";
+
+// Page elements
+const dataset = document.querySelector("#dataset");
 const measure = document.querySelector("#measure");
 const start = document.querySelector("#start");
 const startLabel = document.querySelector("#start-label");
 const chart = document.querySelector("#chart");
 const caption = document.querySelector("#caption");
 
-const units = {
-  co2: "million tonnes per year",
-  co2_per_capita: "tonnes per person per year",
-  share_global_co2: "percent of the global total",
-  cumulative_co2: "million tonnes since 1750",
-};
+let modernData = [];
+let historicalData = [];
+let modernError = null;
+let historicalError = null;
 
-let con;
+const formatNumber = (value) =>
+  Number(value).toLocaleString("en-US");
 
-async function query(sql) {
-  const result = await con.query(sql);
-  return result.toArray().map((row) => row.toJSON());
+// Show loading and error messages
+function showMessage(text) {
+  const message = document.createElement("p");
+  message.id = "status";
+  message.setAttribute("role", "status");
+  message.textContent = text;
+  chart.replaceChildren(message);
 }
 
-// Show a message in place of the chart: while loading, when a choice has no data, or when
-// something fails. Never fill the gap with made-up numbers.
-function message(text, { alert = false } = {}) {
-  const p = document.createElement("p");
-  p.id = "status";
-  p.textContent = text;
-  if (alert) p.setAttribute("role", "alert");
-  chart.replaceChildren(p);
-}
+// Download a real data file
+async function getText(url) {
+  const response = await fetch(url);
 
-// Start DuckDB in a background worker, the same database we used from ibis in Python, and
-// read the file once.
-async function load() {
-  const bundle = await duckdb.selectBundle(duckdb.getJsDelivrBundles());
-  const workerUrl = URL.createObjectURL(
-    new Blob([`importScripts("${bundle.mainWorker}");`], { type: "text/javascript" })
-  );
-  const db = new duckdb.AsyncDuckDB(new duckdb.VoidLogger(), new Worker(workerUrl));
-  await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
-  con = await db.connect();
-
-  // Rows without an ISO code are regions such as "World" or "Europe".
-  await con.query(`
-    CREATE TABLE emissions AS
-    SELECT country, year::INTEGER AS year, co2, co2_per_capita, share_global_co2, cumulative_co2
-    FROM read_csv('${DATA_URL}')
-    WHERE iso_code IS NOT NULL AND NOT starts_with(iso_code, 'OWID')
-  `);
-
-  const countries = await query("SELECT DISTINCT country FROM emissions ORDER BY country");
-  country.replaceChildren(...countries.map((row) => new Option(row.country, row.country)));
-  country.value = "United States";
-}
-
-// Each time a control changes, query the data again and redraw the chart.
-async function update() {
-  startLabel.value = start.value;
-  const name = country.value.replaceAll("'", "''");
-  const rows = await query(`
-    SELECT year, ${measure.value} AS value
-    FROM emissions
-    WHERE country = '${name}' AND year >= ${start.value} AND value IS NOT NULL
-    ORDER BY year
-  `);
-
-  const label = measure.selectedOptions[0].text.toLowerCase();
-  if (rows.length === 0) {
-    message(`There are no data on ${label} for ${country.value} from ${start.value} onward.`);
-    caption.textContent = "Try another country, measure or first year.";
-    return;
+  if (!response.ok) {
+    throw new Error(`Data request failed: ${response.status}`);
   }
 
-  chart.replaceChildren(
-    Plot.plot({
-      width: chart.clientWidth,
-      height: 360,
-      marginLeft: 60,
-      x: { label: "Year", tickFormat: "d" },
-      y: { label: units[measure.value], grid: true },
-      marks: [Plot.lineY(rows, { x: "year", y: "value", tip: true })],
-    })
-  );
-  caption.textContent = `The line shows ${label} for ${country.value} from ${start.value} onward.`;
+  return response.text();
 }
 
-try {
-  await load();
-} catch (error) {
-  message(
-    `The data could not be loaded (${error.message}). Check your connection and reload the page.`,
-    { alert: true }
-  );
-  throw error;
+// Read NOAA annual Mauna Loa CO2 measurements
+async function loadModernData() {
+  const text = await getText(MODERN_URL);
+
+  const rows = text.split(/\r?\n/);
+  const data = [];
+
+  for (const row of rows) {
+    const line = row.trim();
+
+    if (!line || line.startsWith("#")) {
+      continue;
+    }
+
+    const values = line.split(",").map((v) => v.trim());
+
+    const year = Number(values[0]);
+    const co2 = Number(values[1]);
+
+    if (
+      Number.isInteger(year) &&
+      year >= 1958 &&
+      year <= 2100 &&
+      Number.isFinite(co2) &&
+      co2 > 0
+    ) {
+      data.push({
+        year,
+        age: 1950 - year,
+        co2,
+        source: "Modern measurements"
+      });
+    }
+  }
+
+  if (data.length === 0) {
+    throw new Error("No valid modern CO2 measurements found.");
+  }
+
+  return data.sort((a, b) => a.year - b.year);
 }
 
-document.querySelector("#controls").addEventListener("input", update);
+// Read the Vostok ice-core CO2 record
+async function loadHistoricalData() {
+  const text = await getText(HISTORICAL_URL);
 
-// Redraw at the new width once the reader stops resizing the window.
+  const rows = text.split(/\r?\n/);
+  const data = [];
+
+  for (const row of rows) {
+    const line = row.trim();
+
+    if (!line || line.startsWith("#")) {
+      continue;
+    }
+
+    // The NOAA file has two columns:
+    // gas age (years BP) and CO2 (ppm)
+    const values = line.split(/\s+/);
+
+    if (values.length !== 2) {
+      continue;
+    }
+
+    const age = Number(values[0]);
+    const co2 = Number(values[1]);
+
+    if (
+      Number.isFinite(age) &&
+      age >= 0 &&
+      age <= 400000 &&
+      Number.isFinite(co2) &&
+      co2 > 0
+    ) {
+      data.push({
+        age,
+        co2,
+        source: "Vostok ice core"
+      });
+    }
+  }
+
+  if (data.length === 0) {
+    throw new Error("No valid historical CO2 measurements found.");
+  }
+
+  return data.sort((a, b) => a.age - b.age);
+}
+
+// Set the slider based on the selected dataset
+function updateSlider() {
+  const selection = dataset.value;
+
+  if (selection === "modern") {
+    start.min = "1959";
+    start.max = String(
+      modernData.length
+        ? modernData[modernData.length - 1].year
+        : 2025
+    );
+    start.step = "1";
+    start.value = "1959";
+    start.parentElement.firstChild.textContent =
+      "Starting Year ";
+  } else {
+    start.min = "10000";
+    start.max = "400000";
+    start.step = "10000";
+    start.value = "400000";
+    start.parentElement.firstChild.textContent =
+      "Years to Look Back ";
+  }
+
+  update();
+}
+
+// Create a CO2 chart
+function makeChart(data, xField, xLabel, title) {
+  const wrapper = document.createElement("div");
+
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+  wrapper.appendChild(heading);
+
+  const plot = Plot.plot({
+    width: Math.max(320, chart.clientWidth),
+    height: 350,
+    marginLeft: 65,
+    marginBottom: 55,
+
+    x: {
+      label: xLabel,
+      grid: true,
+      reverse: xField === "age",
+      tickFormat: (d) => formatNumber(d)
+    },
+
+    y: {
+      label: "CO2 concentration (ppm)",
+      grid: true,
+      domain: [150, 460]
+    },
+
+    marks: [
+      Plot.lineY(data, {
+        x: xField,
+        y: "co2",
+        stroke: "#168b85",
+        strokeWidth: 2.5,
+        tip: true
+      }),
+
+      Plot.dot(data, {
+        x: xField,
+        y: "co2",
+        r: 2,
+        fill: "#168b85",
+        tip: true
+      })
+    ]
+  });
+
+  plot.setAttribute(
+    "aria-label",
+    `${title}: atmospheric carbon dioxide in parts per million`
+  );
+
+  wrapper.appendChild(plot);
+  return wrapper;
+}
+
+// Update the charts when the user changes a control
+function update() {
+  const selection = dataset.value;
+  const value = Number(start.value);
+
+  startLabel.value = formatNumber(value);
+  chart.replaceChildren();
+
+  if (selection === "modern") {
+    if (modernError) {
+      showMessage(`Modern data unavailable: ${modernError.message}`);
+      return;
+    }
+
+    const filtered = modernData.filter(
+      (row) => row.year >= value
+    );
+
+    if (!filtered.length) {
+      showMessage("No modern measurements for this time range.");
+      return;
+    }
+
+    chart.appendChild(
+      makeChart(
+        filtered,
+        "year",
+        "Calendar year",
+        "Modern CO2 Measurements"
+      )
+    );
+
+    caption.textContent =
+      `Annual CO2 measurements from ${value} onward, ` +
+      "recorded at Mauna Loa Observatory. Units: ppm.";
+
+  } else if (selection === "historical") {
+    if (historicalError) {
+      showMessage(
+        `Historical data unavailable: ${historicalError.message}`
+      );
+      return;
+    }
+
+    const filtered = historicalData.filter(
+      (row) => row.age <= value
+    );
+
+    if (!filtered.length) {
+      showMessage("No ice-core measurements in this time range.");
+      return;
+    }
+
+    chart.appendChild(
+      makeChart(
+        filtered,
+        "age",
+        "Years before 1950 (BP)",
+        "Historical CO2 Levels"
+      )
+    );
+
+    caption.textContent =
+      `Vostok ice-core CO2 measurements from the last ` +
+      `${formatNumber(value)} years. ` +
+      "The horizontal axis shows years before 1950.";
+
+  } else {
+    if (historicalError || modernError) {
+      showMessage(
+        "Both datasets are needed for this comparison. " +
+        "One or more sources could not be loaded. " +
+        "Please check your connection and reload."
+      );
+      return;
+    }
+
+    const historical = historicalData.filter(
+      (row) => row.age <= value
+    );
+
+    if (!historical.length || !modernData.length) {
+      showMessage("No data available for this comparison.");
+      return;
+    }
+
+    // Two panels preserve the different time scales.
+    chart.appendChild(
+      makeChart(
+        historical,
+        "age",
+        "Years before 1950 (BP)",
+        "Historical CO2 Levels"
+      )
+    );
+
+    chart.appendChild(
+      makeChart(
+        modernData,
+        "year",
+        "Calendar year",
+        "Modern CO2 Levels"
+      )
+    );
+
+    caption.textContent =
+      "Both charts use the same CO2 scale (ppm), " +
+      "but different time axes. The historical record " +
+      "comes from Antarctic ice cores, while the modern " +
+      "record comes from direct atmospheric measurements.";
+  }
+}
+
+// Load both datasets when the page opens
+async function initialize() {
+  showMessage("Loading climate data...");
+
+  const results = await Promise.allSettled([
+    loadModernData(),
+    loadHistoricalData()
+  ]);
+
+  if (results[0].status === "fulfilled") {
+    modernData = results[0].value;
+  } else {
+    modernError = results[0].reason;
+    console.error("Modern data error:", modernError);
+  }
+
+  if (results[1].status === "fulfilled") {
+    historicalData = results[1].value;
+  } else {
+    historicalError = results[1].reason;
+    console.error("Historical data error:", historicalError);
+  }
+
+  updateSlider();
+}
+
+// Listen for user interactions
+dataset.addEventListener("change", updateSlider);
+start.addEventListener("input", update);
+
+// The measurement is fixed to CO2 concentration
+measure.addEventListener("change", update);
+
+// Resize charts when the window changes size
 let resizeTimer;
+
 window.addEventListener("resize", () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(update, 200);
 });
 
-await update();
+// Start the application
+initialize();
