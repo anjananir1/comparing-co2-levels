@@ -1,46 +1,132 @@
+
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Carbon dioxide emissions</title>
-    <link rel="stylesheet" href="style.css" />
-    <script type="module" src="app.js"></script>
-  </head>
-  <body>
-    <main>
-      <h1>Carbon dioxide emissions</h1>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Comparing CO2 Levels Across Time</title>
+
+  <link rel="stylesheet" href="style.css" />
+  <script type="module" src="app.js"></script>
+</head>
+
+<body>
+  <main>
+    <header>
+      <h1>Comparing CO2 Levels Across Time</h1>
+
       <p>
-        Choose a country and a measure to see how its fossil carbon dioxide
-        emissions have changed. The data come from
-        <a href="https://github.com/owid/co2-data">Our World in Data</a>, the
-        same file we used in the climate module.
+        CO2 levels have changed a lot throughout Earth's history.
+        This app looks at how atmospheric CO2 concentrations have
+        changed over time, using modern measurements and historical
+        climate records.
+      </p>
+
+      <p>
+        The data come from
+        <a href="https://gml.noaa.gov/ccgg/trends/">
+          NOAA
+        </a>
+        and historical ice core records used in Module 1.
+      </p>
+    </header>
+
+    <section aria-labelledby="explore-heading">
+      <h2 id="explore-heading">Explore CO2 Levels</h2>
+
+      <p>
+        Choose a dataset and time period to see how CO2 levels
+        have changed. You can also compare the different records
+        to see how recent measurements relate to the past.
       </p>
 
       <form id="controls">
-        <label>
-          Country
-          <select id="country"></select>
-        </label>
-        <label>
-          Measure
-          <select id="measure">
-            <option value="co2">Annual emissions</option>
-            <option value="co2_per_capita">Emissions per person</option>
-            <option value="share_global_co2">Share of global emissions</option>
-            <option value="cumulative_co2">Cumulative emissions</option>
+        <label for="dataset">
+          Dataset
+          <select id="dataset">
+            <option value="modern">Modern CO2 Measurements</option>
+            <option value="historical">Historical Ice Core Data</option>
+            <option value="both">Compare Both</option>
           </select>
         </label>
-        <label>
-          First year <output id="start-label"></output>
-          <input id="start" type="range" min="1850" max="2020" step="10" value="1950" />
+
+        <label for="measure">
+          Measurement
+          <select id="measure">
+            <option value="average">CO2 Concentration (ppm)</option>
+          </select>
+        </label>
+
+        <label for="start">
+          Starting Year
+          <output id="start-label">1958</output>
+          <input
+            id="start"
+            type="range"
+            min="1958"
+            max="2020"
+            step="1"
+            value="1958"
+          />
         </label>
       </form>
+    </section>
+
+    <section aria-labelledby="chart-heading">
+      <h2 id="chart-heading">CO2 Levels Over Time</h2>
 
       <figure>
-        <div id="chart"><p id="status">Loading data…</p></div>
-        <figcaption id="caption"></figcaption>
+        <div id="chart">
+          <p id="status">Loading climate data...</p>
+        </div>
+
+        <figcaption id="caption">
+          Atmospheric CO2 concentrations are measured in
+          parts per million (ppm).
+        </figcaption>
       </figure>
-    </main>
-  </body>
+    </section>
+
+    <section aria-labelledby="about-heading">
+      <h2 id="about-heading">About the Data</h2>
+
+      <p>
+        Modern CO2 measurements come from the Mauna Loa
+        Observatory in Hawaii. These measurements provide
+        a record of atmospheric CO2 concentrations beginning
+        in 1958.
+      </p>
+
+      <p>
+        Historical CO2 estimates come from air trapped in
+        Antarctic ice cores. These records help scientists
+        understand how atmospheric CO2 concentrations
+        changed long before modern instruments existed.
+      </p>
+
+      <p>
+        Comparing the two datasets helps show how recent
+        CO2 levels relate to changes over much longer
+        periods of Earth's history.
+      </p>
+    </section>
+
+    <footer>
+      <p>
+        ESPM 157 | Module 4
+      </p>
+      <p>
+        Data sources:
+        <a href="https://gml.noaa.gov/ccgg/trends/">
+          NOAA
+        </a>
+        |
+        <a href="https://doi.org/10.3334/CDIAC/ATG.009">
+          Vostok Ice Core
+        </a>
+      </p>
+    </footer>
+  </main>
+</body>
 </html>
