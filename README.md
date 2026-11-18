@@ -1,6 +1,8 @@
 
 # Comparing CO2 Levels Across Time
 
+[![App check](https://github.com/anjananir1/comparing-co2-levels/actions/workflows/check.yml/badge.svg)](https://github.com/anjananir1/comparing-co2-levels/actions/workflows/check.yml)
+
 ## About the Project
 
 For our ESPM 157 Module 4 project, we wanted to look at how atmospheric CO2 levels have changed over time. We decided to compare modern CO2 measurements with historical ice core records to see how recent changes compare to the past 400,000 years.
