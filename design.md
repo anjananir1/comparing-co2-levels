@@ -65,11 +65,14 @@ One limitation is that our tests use sample data, so they cannot guarantee that 
 
 ## License
 
-We chose the MIT License for our code because it allows other people to use, modify, and share our project as long as they include the original copyright and license notice.
+We chose the MIT License for our original project code because it allows other people to use, modify, and share our work as long as they keep the copyright and license notice.
 
-Our modern CO2 data comes from NOAA, which is generally public-domain U.S. government data. Our historical CO2 data comes from the Vostok ice core records, which we cite and link to directly. We would need to confirm the specific reuse terms for the Vostok dataset before redistributing it.
+Our modern CO2 measurements come from NOAA, and our historical CO2 measurements come from the Vostok ice core records archived by NOAA's National Centers for Environmental Information (NCEI).
 
-The MIT License applies to our own code, not automatically to the original datasets.
+NOAA provides its paleoclimatology data for public access and asks users to cite the original datasets and research. We included links to our data sources and use the measurements for an educational visualization. We did not include copies of the original datasets in our repository.
+
+The MIT License applies to our own code and does not replace any terms associated with the original datasets or third-party libraries.
+
 
 ## Accessibility and Layout
 
