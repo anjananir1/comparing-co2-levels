@@ -20,6 +20,14 @@ The NOAA dataset contains annual CO2 measurements beginning in 1959, while the V
 
 Both datasets are relatively small text-based files that the browser can download and process directly using JavaScript. We did not need a separate backend or database.
 
+## Verification Against Module 1
+
+Our Module 4 application builds on the atmospheric CO2 analysis from Module 1. To check that the data are being displayed correctly, we can compare the modern CO2 graph in our application with the corresponding measurements in our original `climate.ipynb` notebook.
+
+We will use the same year and CO2 concentration from both sources and check whether the values agree in parts per million (ppm). We will also compare the overall trend to make sure the graph represents the data correctly.
+
+Our application reads the NOAA measurements directly from the original data source, rather than using manually entered values.
+
 ## Interactions
 
 We included three controls so users can explore the data themselves.
