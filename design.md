@@ -73,8 +73,4 @@ The MIT License applies to our own code, not automatically to the original datas
 
 ## Accessibility and Layout
 
-We tried to keep the website simple and easy to navigate. Each control has a visible label, and the graphs include titles, axis labels, and descriptions so users do not have to rely only on colors to understand the data.
-
-We also used CSS to make the layout adjust to smaller screens. Our automated tests include a mobile-sized viewport check.
-
-We manually checked that the graphs and dropdown controls worked in the published website. We still need to finish checking keyboard navigation and the full mobile experience manually.
+We manually tested the published website on both desktop and mobile screens to make sure the graphs, dropdowns, and slider worked correctly. We also tested keyboard navigation by using the Tab and arrow keys to interact with the controls without a mouse. The controls responded correctly, and the graphs updated based on our selections.
