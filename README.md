@@ -68,9 +68,6 @@ https://github.com/anjananir1/comparing-co2-levels
 **Website:**
 https://anjananir1.github.io/comparing-co2-levels/
 
-**Module 1 Repository:**
-https://github.com/anjananir1/climate-module-anjananir1
-
 ## AI Usage
 
 We used AI to help us throughout this project, mainly for troubleshooting errors, understanding parts of the code, and figuring out how to improve the graphs and layout. We still worked on writing and putting together the project ourselves, including choosing the topic, deciding how we wanted the data to be displayed, and making changes to the code.
