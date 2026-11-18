@@ -1,4 +1,3 @@
-
 import * as Plot from "https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.17/+esm";
 
 // Original climate data sources
