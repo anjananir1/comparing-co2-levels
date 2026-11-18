@@ -1,39 +1,72 @@
-# Design document
-
-Replace each prompt below with a few sentences. Keep this file up to date as the app changes.
+# Design Document
 
 ## Readers
 
-Who is the app for, and what question will they bring to it?
+Our app is for students and anyone interested in learning about climate change and atmospheric CO2 levels. We wanted to answer how CO2 levels have changed over time and how recent measurements compare to the past 400,000 years. We wanted to make it easier for people to understand the data without having to look through the original datasets themselves.
 
 ## Data
 
-Which module does the app build on? Link each data source the app reads, and say how large
-it is and whether the browser can read it directly.
+Our app builds on Module 1, where we worked with climate data.
+
+We used two datasets:
+
+1. NOAA Mauna Loa CO2 measurements:
+   https://gml.noaa.gov/ccgg/trends/
+
+2. Vostok Antarctic ice core CO2 records:
+   https://doi.org/10.3334/CDIAC/ATG.009
+
+The NOAA dataset contains annual CO2 measurements beginning in 1959, while the Vostok dataset covers approximately 400,000 years of historical CO2 estimates.
+
+Both datasets are relatively small text-based files that the browser can download and process directly using JavaScript. We did not need a separate backend or database.
 
 ## Interactions
 
-List each control (dropdown, slider, map click, text box and so on), what the reader changes
-with it, and what in the app changes in response.
+We included three controls so users can explore the data themselves.
+
+- Dataset dropdown: Users can choose modern CO2 measurements, historical ice core data, or both. The graphs update depending on their selection.
+- Measurement dropdown: This displays CO2 concentration in parts per million (ppm). We kept the measurement consistent because both datasets use the same units.
+- Time slider: Users can change the starting year for modern measurements or how many years back they want to explore for historical data. The graph updates based on the selected range.
+
+We wanted the controls to be simple so users could focus on understanding how CO2 levels have changed.
 
 ## Path
 
-Which of the three paths in the README did you choose, and why?
+We chose the interactive data visualization path because our main goal was to help users explore climate data through graphs.
+
+Instead of only presenting static charts, we wanted people to be able to change the time period and switch between modern and historical measurements. This made it easier to compare different periods of Earth's climate history.
 
 ## Dependencies
 
-List each library the app uses, its version, and what it does. Say why you needed it.
+Our app uses:
+
+- Observable Plot version 0.6.17: Creates the CO2 line graphs and displays the data.
+- JavaScript: Loads and processes the datasets and updates the graphs when users change the controls.
+- HTML: Provides the structure of the website and the interactive controls.
+- CSS: Handles the layout and makes the website easier to use on different screen sizes.
+
+We chose Observable Plot because it allowed us to create readable graphs without having to build the entire visualization system ourselves.
 
 ## Tests
 
-What do your tests in `tests/` check? What could still go wrong that they would not catch?
+Our automated tests are located in the `tests/` folder. We used Playwright and pytest to check that the app loads and that the interactive features work.
+
+The tests check that users can switch between modern and historical datasets, display both graphs, and change the time range using the slider. They also check how the app responds when data cannot be loaded and whether the layout works at a smaller screen size.
+
+One limitation is that our tests use sample data, so they cannot guarantee that NOAA's external data links will always be available. We also manually checked the published website to make sure the graphs were displaying correctly.
 
 ## License
 
-Which license did you choose for your code, and why? Name the license of each data source,
-and say whether your app is allowed to use and redistribute it under those terms.
+We chose the MIT License for our code because it allows other people to use, modify, and share our project as long as they include the original copyright and license notice.
 
-## Accessibility and layout
+Our modern CO2 data comes from NOAA, which is generally public-domain U.S. government data. Our historical CO2 data comes from the Vostok ice core records, which we cite and link to directly. We would need to confirm the specific reuse terms for the Vostok dataset before redistributing it.
 
-How did you check that the app works on a phone, with a keyboard, and for a reader who cannot
-tell your colors apart?
+The MIT License applies to our own code, not automatically to the original datasets.
+
+## Accessibility and Layout
+
+We tried to keep the website simple and easy to navigate. Each control has a visible label, and the graphs include titles, axis labels, and descriptions so users do not have to rely only on colors to understand the data.
+
+We also used CSS to make the layout adjust to smaller screens. Our automated tests include a mobile-sized viewport check.
+
+We manually checked that the graphs and dropdown controls worked in the published website. We still need to finish checking keyboard navigation and the full mobile experience manually.
